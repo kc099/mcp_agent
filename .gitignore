@@ -1,0 +1,5 @@
+*.docx
+.env
+chroma_db/
+config.toml
+data/

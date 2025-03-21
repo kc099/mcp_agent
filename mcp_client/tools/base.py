@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -40,6 +40,41 @@ class BaseTool(ABC, BaseModel):
                 "parameters": self.parameters,
             },
         }
+
+
+class ToolCollection:
+    """A collection of tools that can be used by the agent."""
+
+    def __init__(self, *tools: BaseTool):
+        """Initialize with a list of tools."""
+        self.tools: List[BaseTool] = list(tools)
+
+    def __iter__(self):
+        """Iterate over tools."""
+        return iter(self.tools)
+
+    def __len__(self):
+        """Get number of tools."""
+        return len(self.tools)
+
+    def add(self, tool: BaseTool):
+        """Add a tool to the collection."""
+        self.tools.append(tool)
+
+    def remove(self, tool_name: str):
+        """Remove a tool from the collection by name."""
+        self.tools = [t for t in self.tools if t.name != tool_name]
+
+    def get(self, tool_name: str) -> Optional[BaseTool]:
+        """Get a tool by name."""
+        for tool in self.tools:
+            if tool.name == tool_name:
+                return tool
+        return None
+
+    def to_params(self) -> List[Dict]:
+        """Convert all tools to function call format."""
+        return [tool.to_param() for tool in self.tools]
 
 
 class ToolResult(BaseModel):

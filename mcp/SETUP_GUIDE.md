@@ -24,6 +24,7 @@ uv venv
 
 ### 2. Install Dependencies
 ```bash
+.venv\Scripts\python.exe -m ensurepip --upgrade
 # Install all required packages using the virtual environment's Python
 .venv\Scripts\python.exe -m uv pip install mcp playwright pydantic colorama openai duckduckgo-search baidusearch docker
 

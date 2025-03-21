@@ -16,3 +16,4 @@ langchain>=0.1.5
 rich>=13.7.0
 requests>=2.31.0
 python-multipart>=0.0.9 
+aiofiles>=23.2.1

@@ -25,12 +25,22 @@ logger = logging.getLogger("mcp-server")
 
 from tools.base import BaseTool
 from tools.browser_use_tool import BrowserUseTool
+from tools.bash import Bash
+from tools.str_replace_editor import StrReplaceEditor
+from tools.terminate import Terminate
+from tools.python_execute import PythonExecute
+from tools.file_saver import FileSaver
 
 # Initialize FastMCP server
 mcp_agent = FastMCP("mcp_agent")
 
 # Initialize tool instances
 browser_tool = BrowserUseTool()
+bash_tool = Bash()
+str_replace_editor_tool = StrReplaceEditor()
+terminate_tool = Terminate()
+python_execute_tool = PythonExecute()
+file_saver_tool = FileSaver()
 
 
 def register_tool(tool: BaseTool, method_name: Optional[str] = None) -> None:
@@ -137,6 +147,11 @@ def register_tool(tool: BaseTool, method_name: Optional[str] = None) -> None:
 
 # Register all tools
 register_tool(browser_tool)
+register_tool(bash_tool)
+register_tool(str_replace_editor_tool)
+register_tool(terminate_tool)
+register_tool(python_execute_tool)
+register_tool(file_saver_tool)
 
 
 # Clean up resources

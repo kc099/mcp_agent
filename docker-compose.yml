@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./chroma_db:/app/chroma_db
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    # Interactive mode for MCP client
+    stdin_open: true
+    tty: true
+    # Restart policy for production use
+    restart: unless-stopped

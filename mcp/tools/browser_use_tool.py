@@ -1,9 +1,12 @@
+import logging
 from typing import Any, Optional
-
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
-
+from pydantic import Field
 from .base import BaseTool, ToolResult
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class BrowserUseTool(BaseTool):
     """A tool for browser automation."""
@@ -48,46 +51,82 @@ Provides capabilities for navigating websites, clicking elements, typing text, a
         },
     }
 
-    browser: Optional[Browser] = None
-    context: Optional[BrowserContext] = None
-    page: Optional[Page] = None
+    # Define Pydantic fields for browser components
+    playwright: Any = Field(default=None)
+    browser: Optional[Browser] = Field(default=None)
+    context: Optional[BrowserContext] = Field(default=None)
+    page: Optional[Page] = Field(default=None)
 
     async def setup(self):
         """Set up the browser if not already initialized."""
+        logger.debug("Setting up browser...")
         if not self.browser:
-            playwright = await async_playwright().start()
-            self.browser = await playwright.chromium.launch()
-            self.context = await self.browser.new_context()
-            self.page = await self.context.new_page()
+            try:
+                logger.debug("Starting Playwright...")
+                self.playwright = await async_playwright().start()
+                logger.debug("Launching Chromium browser...")
+                self.browser = await self.playwright.chromium.launch(
+                    headless=False,
+                    args=['--start-maximized']
+                )
+                logger.debug("Creating new browser context...")
+                self.context = await self.browser.new_context(
+                    viewport={'width': 1920, 'height': 1080}
+                )
+                logger.debug("Creating new page...")
+                self.page = await self.context.new_page()
+                logger.debug("Browser setup complete")
+            except Exception as e:
+                logger.error(f"Error setting up browser: {str(e)}")
+                if self.playwright:
+                    await self.playwright.stop()
+                raise
 
     async def cleanup(self):
         """Clean up browser resources."""
-        if self.browser:
-            await self.browser.close()
-            self.browser = None
-            self.context = None
+        logger.debug("Cleaning up browser resources...")
+        try:
+            if self.page:
+                await self.page.close()
+            if self.context:
+                await self.context.close()
+            if self.browser:
+                await self.browser.close()
+            if self.playwright:
+                await self.playwright.stop()
+        except Exception as e:
+            logger.error(f"Error during cleanup: {str(e)}")
+        finally:
             self.page = None
+            self.context = None
+            self.browser = None
+            self.playwright = None
+            logger.debug("Browser cleanup complete")
 
     async def execute(self, **kwargs) -> Any:
         """Execute a browser action."""
-        await self.setup()
-
-        action = kwargs.get("action")
-        if not action:
-            return ToolResult(error="Action is required")
-
+        logger.debug(f"Executing browser action with args: {kwargs}")
         try:
+            await self.setup()
+
+            action = kwargs.get("action")
+            if not action:
+                return ToolResult(error="Action is required")
+
             if action == "navigate":
                 url = kwargs.get("url")
                 if not url:
                     return ToolResult(error="URL is required for navigate action")
+                logger.debug(f"Navigating to URL: {url}")
                 await self.page.goto(url)
+                logger.debug("Navigation complete")
                 return ToolResult(output=f"Navigated to {url}")
 
             elif action == "click":
                 selector = kwargs.get("selector")
                 if not selector:
                     return ToolResult(error="Selector is required for click action")
+                logger.debug(f"Clicking element: {selector}")
                 await self.page.click(selector)
                 return ToolResult(output=f"Clicked element: {selector}")
 
@@ -96,6 +135,7 @@ Provides capabilities for navigating websites, clicking elements, typing text, a
                 text = kwargs.get("text")
                 if not selector or text is None:
                     return ToolResult(error="Selector and text are required for type action")
+                logger.debug(f"Typing text into {selector}")
                 await self.page.fill(selector, text)
                 return ToolResult(output=f"Typed text into {selector}")
 
@@ -103,10 +143,12 @@ Provides capabilities for navigating websites, clicking elements, typing text, a
                 selector = kwargs.get("selector")
                 if not selector:
                     return ToolResult(error="Selector is required for get_text action")
+                logger.debug(f"Getting text from {selector}")
                 text = await self.page.text_content(selector)
                 return ToolResult(output=text)
 
             elif action == "get_links":
+                logger.debug("Getting all links from page")
                 links = await self.page.eval_on_selector_all("a[href]", """
                     elements => elements.map(el => ({
                         text: el.textContent,
@@ -119,4 +161,8 @@ Provides capabilities for navigating websites, clicking elements, typing text, a
                 return ToolResult(error=f"Unknown action: {action}")
 
         except Exception as e:
-            return ToolResult(error=str(e)) 
+            logger.error(f"Error executing browser action: {str(e)}")
+            return ToolResult(error=str(e))
+        finally:
+            # Don't cleanup here - let the cleanup method be called explicitly
+            pass 

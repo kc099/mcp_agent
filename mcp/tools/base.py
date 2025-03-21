@@ -67,4 +67,12 @@ class CLIResult(ToolResult):
 
 class ToolFailure(ToolResult):
     """A ToolResult that represents a failure."""
-    pass 
+    pass
+
+
+class ToolError(Exception):
+    """Exception raised when a tool encounters an error."""
+    def __init__(self, message: str, result: Optional[ToolResult] = None):
+        self.message = message
+        self.result = result
+        super().__init__(message) 

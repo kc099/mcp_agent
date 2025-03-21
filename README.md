@@ -99,3 +99,6 @@ python mcpclient.py
 
 Once the server is running, visit `http://localhost:8000/docs` for the interactive API documentation.
 
+# Building a Tool-Augmented RAG System with Claude MCP or OpenManus
+Instead of directly connecting an LLM to your ChromaDB, you can build a more sophisticated system that uses tools to iteratively analyze and process data. This approach combines the benefits of RAG with the multi-step reasoning capabilities of agents.
+
